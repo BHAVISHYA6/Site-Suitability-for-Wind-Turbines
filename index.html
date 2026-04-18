@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wind Turbine Site Suitability — Tirupati</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="style.css"/>
+
+  <style>
+    /* ═══════════════════════════════════════════
+       ML PANEL STYLES  — self-contained, no clash
+    ═══════════════════════════════════════════ */
+
+    /* ── ML Section wrapper inside right panel ── */
+    .ml-section {
+      margin-top: 16px;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #050e1a;
+    }
+
+    .ml-section-header {
+      background: linear-gradient(90deg, #1e3a5f 0%, #0f2847 100%);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ml-section-header .ml-badge {
+      background: #9b5de5;
+      color: #fff;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+    }
+
+    .ml-section-header .ml-title {
+      color: #e2e8f0;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    /* ── ML Description ── */
+    .ml-desc {
+      padding: 10px 12px 4px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9.5px;
+      color: #64748b;
+      line-height: 1.55;
+    }
+    .ml-desc strong { color: #94a3b8; }
+
+    /* ── Feature list ── */
+    .ml-features {
+      padding: 6px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .ml-feat-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: #64748b;
+    }
+    .ml-feat-row .feat-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ml-feat-row .feat-name { color: #38bdf8; min-width: 82px; }
+
+    /* ── Architecture diagram ── */
+    .ml-arch {
+      margin: 0 12px 10px;
+      background: #0a1628;
+      border: 1px solid #1e3a5f;
+      border-radius: 6px;
+      padding: 10px 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: #475569;
+      text-align: center;
+    }
+    .ml-arch-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin: 3px 0;
+    }
+    .ml-layer-box {
+      background: #0f2847;
+      border: 1px solid #1e4080;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 8.5px;
+      color: #93c5fd;
+      white-space: nowrap;
+    }
+    .ml-layer-box.input  { border-color: #38bdf8; color: #38bdf8; }
+    .ml-layer-box.hidden { border-color: #818cf8; color: #a5b4fc; }
+    .ml-layer-box.output { border-color: #4ade80; color: #4ade80; }
+    .ml-arrow { color: #334155; font-size: 10px; }
+
+    /* ── Buttons ── */
+    .ml-btn-row {
+      padding: 0 12px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ml-btn {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 5px;
+      border: 1px solid;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      letter-spacing: 0.3px;
+    }
+
+    #ml-train-btn {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+      border-color: #3b82f6;
+      color: #93c5fd;
+    }
+    #ml-train-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(59,130,246,0.4);
+    }
+
+    #ml-predict-btn {
+      background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+      border-color: #22c55e;
+      color: #86efac;
+    }
+    #ml-predict-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(34,197,94,0.4);
+    }
+
+    #ml-click-btn {
+      background: linear-gradient(135deg, #3b0764 0%, #581c87 100%);
+      border-color: #a855f7;
+      color: #d8b4fe;
+    }
+    #ml-click-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      color: #fff;
+      box-shadow: 0 0 12px rgba(168,85,247,0.4);
+    }
+    #ml-click-btn.active {
+      background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+      color: #fff;
+    }
+
+    #ml-clear-btn {
+      background: transparent;
+      border-color: #334155;
+      color: #475569;
+    }
+    #ml-clear-btn:hover {
+      border-color: #ef4444;
+      color: #f87171;
+    }
+
+    .ml-btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    /* ── Progress bar ── */
+    .ml-progress-wrap {
+      margin: 0 12px 8px;
+      height: 4px;
+      background: #0f2847;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #ml-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3b82f6, #818cf8, #a855f7);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* ── Status message ── */
+    .ml-status {
+      margin: 0 12px 8px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      line-height: 1.5;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border-left: 3px solid;
+      min-height: 28px;
+    }
+    .ml-status-info     { background: #0f172a; border-color: #334155; color: #64748b; }
+    .ml-status-training { background: #0c1a3a; border-color: #3b82f6; color: #93c5fd; }
+    .ml-status-success  { background: #052e16; border-color: #22c55e; color: #86efac; }
+    .ml-status-warn     { background: #1c1204; border-color: #f59e0b; color: #fcd34d; }
+    .ml-status-error    { background: #1c0505; border-color: #ef4444; color: #fca5a5; }
+
+    /* ── Training chart ── */
+    .ml-chart-wrap {
+      margin: 0 12px 12px;
+      border: 1px solid #1e3a5f;
+      border-radius: 5px;
+      overflow: hidden;
+      background: #0f172a;
+    }
+    .ml-chart-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      color: #475569;
+      padding: 4px 8px 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    #ml-train-chart {
+      display: block;
+      width: 100%;
+      height: 90px;
+    }
+
+    /* ── Class legend ── */
+    .ml-class-legend {
+      margin: 0 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ml-class-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: #64748b;
+    }
+    .ml-class-dot {
+      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+    }
+
+    /* ── How it works (steps) ── */
+    .ml-how {
+      margin: 0 12px 10px;
+      border-top: 1px solid #1e3a5f;
+      padding-top: 8px;
+    }
+    .ml-how-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 8.5px;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .ml-how-step {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 5px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    .ml-how-step .step-n {
+      background: #1e3a5f;
+      color: #93c5fd;
+      font-size: 8px;
+      font-weight: 700;
+      width: 16px; height: 16px;
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ── Math section ── */
+    .ml-math {
+      margin: 0 12px 12px;
+      background: #0a1628;
+      border: 1px solid #1e3a5f;
+      border-radius: 5px;
+      padding: 8px 10px;
+      font-family: 'Space Mono', monospace;
+      font-size: 8.5px;
+      color: #475569;
+    }
+    .ml-math-title {
+      color: #38bdf8;
+      font-size: 9px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .ml-math-line {
+      display: flex;
+      gap: 6px;
+      margin: 3px 0;
+      line-height: 1.5;
+    }
+    .ml-math-line .eq-name { color: #818cf8; min-width: 75px; }
+    .ml-math-line .eq-val  { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header class="site-header">
+  <div class="header-left">
+    <div class="logo-mark">🌬️</div>
+    <div class="header-titles">
+      <h1>Wind Turbine Suitability</h1>
+      <span class="subtitle">Tirupati, Andhra Pradesh · GIS + ML Analysis</span>
+    </div>
+  </div>
+  <div class="header-badges">
+    <span class="badge">EPSG:32644</span>
+    <span class="badge">QGIS 3.40</span>
+    <span class="badge badge-accent">TF.js Neural Net</span>
+  </div>
+</header>
+
+<!-- ─── MAIN LAYOUT ─── -->
+<div class="app-layout">
+
+  <!-- ─── LEFT SIDEBAR ─── -->
+  <aside class="sidebar">
+
+    <!-- Query Tabs -->
+    <div class="sidebar-section">
+      <div class="section-label">ANALYSIS QUERIES</div>
+
+      <div class="query-group">
+        <div class="group-title">🔷 Vector Exclusion</div>
+        <button class="query-btn active" data-query="q1" onclick="activateQuery('q1', this)">
+          <span class="qnum">Q1</span>
+          <div class="qinfo"><strong>Urban Avoidance</strong><small>5km buffer · Buildings, Schools, Hospitals</small></div>
+        </button>
+        <button class="query-btn" data-query="q2" onclick="activateQuery('q2', this)">
+          <span class="qnum">Q2</span>
+          <div class="qinfo"><strong>Water Safety</strong><small>200m buffer · Rivers, Canals, Waterbodies</small></div>
+        </button>
+        <button class="query-btn" data-query="q5" onclick="activateQuery('q5', this)">
+          <span class="qnum">Q5</span>
+          <div class="qinfo"><strong>Wildlife &amp; Landuse</strong><small>1km buffer · Protected zones</small></div>
+        </button>
+        <button class="query-btn" data-query="q7" onclick="activateQuery('q7', this)">
+          <span class="qnum">Q7</span>
+          <div class="qinfo"><strong>Power Proximity</strong><small>Near power lines &amp; stations</small></div>
+        </button>
+        <button class="query-btn" data-query="final_vector" onclick="activateQuery('final_vector', this)">
+          <span class="qnum" style="background:#00d4aa">FV</span>
+          <div class="qinfo"><strong>Final Vector Result</strong><small>Intersection of all queries</small></div>
+        </button>
+      </div>
+
+      <button class="query-btn final-btn" data-query="final_combined" onclick="activateQuery('final_combined', this)">
+        <span class="qnum" style="background:#ff6b35;font-size:10px">FINAL</span>
+        <div class="qinfo"><strong>Combined Result</strong><small>Vector + ML Prediction</small></div>
+      </button>
+    </div>
+
+    <!-- Layer Toggle -->
+    <div class="sidebar-section">
+      <div class="section-label">LAYER VISIBILITY</div>
+      <div id="layer-toggles" class="layer-toggles"></div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="sidebar-section">
+      <div class="section-label">QUERY INFO</div>
+      <div id="query-info" class="query-info-box">
+        <div class="info-title">Query 1 — Urban Avoidance</div>
+        <div class="info-goal">Exclude areas within 5km of buildings, schools, and hospitals to ensure safety and noise compliance.</div>
+        <div class="info-formula">
+          <div class="formula-label">Processing Steps:</div>
+          <div class="formula-code">Centroids → Merge → Buffer(5000m) → Difference(Boundary)</div>
+        </div>
+        <div class="info-output">Output: <code>Query1final.shp</code></div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ─── MAP AREA ─── -->
+  <main class="map-area">
+
+    <!-- Map Controls -->
+    <div class="map-toolbar">
+      <div class="toolbar-left">
+        <button class="tool-btn active" onclick="setBasemap('osm', this)" title="OpenStreetMap">🗺️ OSM</button>
+        <button class="tool-btn" onclick="setBasemap('satellite', this)" title="Satellite">🛰️ Satellite</button>
+        <button class="tool-btn" onclick="setBasemap('topo', this)" title="Topo">⛰️ Topo</button>
+        <div class="divider"></div>
+        <button class="tool-btn" onclick="showAllLayers()" title="Show all">👁️ All</button>
+        <button class="tool-btn" onclick="hideAllLayers()" title="Hide all">🚫 Hide</button>
+        <button class="tool-btn" onclick="zoomToBoundary()" title="Zoom to study area">📍 Tirupati</button>
+        <div class="divider"></div>
+        <button class="tool-btn reset-btn" id="reset-btn" onclick="resetMap()" title="Clear all layers and reset map">↺ Reset</button>
+      </div>
+      <div class="toolbar-right">
+        <div class="coord-display" id="coord-display">Hover over map...</div>
+      </div>
+    </div>
+
+    <!-- Leaflet Map -->
+    <div id="map"></div>
+
+    <!-- Legend -->
+    <div class="map-legend" id="map-legend">
+      <div class="legend-title">Legend</div>
+      <div id="legend-content"></div>
+      <!-- ML legend appended here when prediction is active -->
+      <div id="ml-map-legend" style="display:none;margin-top:8px;border-top:1px solid #1e293b;padding-top:6px">
+        <div style="font-family:'Space Mono',monospace;font-size:9px;color:#94a3b8;margin-bottom:5px">🤖 ML PREDICTION</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444;opacity:0.7"></div><span>Low Suitability</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#f59e0b;opacity:0.7"></div><span>Medium Suitability</span></div>
+        <div class="legend-item"><div class="legend-color" style="background:#22c55e;opacity:0.7"></div><span>High Suitability</span></div>
+      </div>
+    </div>
+
+    <!-- Stats Panel -->
+    <div class="stats-panel" id="stats-panel">
+      <div class="stat-item"><span class="stat-label">Study Area</span><span class="stat-val">~150 km²</span></div>
+      <div class="stat-item"><span class="stat-label">Vector Queries</span><span class="stat-val">4</span></div>
+      <div class="stat-item"><span class="stat-label">ML Features</span><span class="stat-val">6</span></div>
+      <div class="stat-item"><span class="stat-label">ML Algorithm</span><span class="stat-val">Neural Net</span></div>
+    </div>
+
+  </main>
+
+  <!-- ─── RIGHT PANEL ─── -->
+  <aside class="right-panel">
+    <div class="section-label">WORKFLOW</div>
+    <div class="workflow-steps" id="workflow-steps">
+      <div class="wf-step done" onclick="activateQuery('q1', document.querySelector('[data-query=q1]'))">
+        <div class="wf-dot">✓</div>
+        <div class="wf-text"><strong>Q1</strong> Urban Buffer</div>
+      </div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step done" onclick="activateQuery('q2', document.querySelector('[data-query=q2]'))">
+        <div class="wf-dot">✓</div>
+        <div class="wf-text"><strong>Q2</strong> Water Buffer</div>
+      </div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step done" onclick="activateQuery('q5', document.querySelector('[data-query=q5]'))">
+        <div class="wf-dot">✓</div>
+        <div class="wf-text"><strong>Q5</strong> Wildlife Buffer</div>
+      </div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step done" onclick="activateQuery('q7', document.querySelector('[data-query=q7]'))">
+        <div class="wf-dot">✓</div>
+        <div class="wf-text"><strong>Q7</strong> Power Proximity</div>
+      </div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step done" onclick="activateQuery('final_vector', document.querySelector('[data-query=final_vector]'))">
+        <div class="wf-dot" style="background:#00d4aa">∩</div>
+        <div class="wf-text"><strong>Final Vector</strong></div>
+      </div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step done ml" onclick="document.getElementById('ml-train-btn').scrollIntoView({behavior:'smooth'})">
+        <div class="wf-dot" style="background:#9b5de5">🧠</div>
+        <div class="wf-text"><strong>Neural Net ML</strong></div>
+      </div>
+      <div class="wf-arrow">↓</div>
+      <div class="wf-step final" onclick="activateQuery('final_combined', document.querySelector('[data-query=final_combined]'))">
+        <div class="wf-dot" style="background:#ff6b35">🎯</div>
+        <div class="wf-text"><strong>FINAL RESULT</strong></div>
+      </div>
+    </div>
+
+    <div class="section-label" style="margin-top:12px">TECH STACK</div>
+    <div class="tech-stack">
+      <span class="tech-tag">QGIS 3.40</span>
+      <span class="tech-tag">Leaflet.js</span>
+      <span class="tech-tag">TensorFlow.js</span>
+      <span class="tech-tag">GDAL/OGR</span>
+      <span class="tech-tag">SAGA GIS</span>
+      <span class="tech-tag">GeoJSON</span>
+      <span class="tech-tag">EPSG:32644</span>
+      <span class="tech-tag">Global Wind Atlas</span>
+    </div>
+
+    <div class="section-label" style="margin-top:12px">FORMULAS</div>
+    <div class="formula-panel" id="formula-panel">
+      <div class="formula-item">
+        <span class="fi-name">NDVI</span>
+        <span class="fi-code">(B4−B3)/(B4+B3)</span>
+      </div>
+      <div class="formula-item">
+        <span class="fi-name">NDBI</span>
+        <span class="fi-code">(B5−B4)/(B5+B4)</span>
+      </div>
+      <div class="formula-item">
+        <span class="fi-name">NDWI</span>
+        <span class="fi-code">(B2−B4)/(B2+B4)</span>
+      </div>
+      <div class="formula-item">
+        <span class="fi-name">BSI</span>
+        <span class="fi-code">((B5+B3)−(B4+B1)) / ((B5+B3)+(B4+B1))</span>
+      </div>
+      <div class="formula-item">
+        <span class="fi-name">Energy</span>
+        <span class="fi-code">0.6×WindN + 0.4×PowerN</span>
+      </div>
+      <div class="formula-item">
+        <span class="fi-name">Suitability</span>
+        <span class="fi-code">Energy × LandMask</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         ML PANEL  (the new addition)
+    ═══════════════════════════════════════════ -->
+    <div class="ml-section">
+
+      <div class="ml-section-header">
+        <span class="ml-badge">ML</span>
+        <span class="ml-title">Neural Network Classifier</span>
+      </div>
+
+      <!-- Description -->
+      <div class="ml-desc">
+        A <strong>TensorFlow.js neural network</strong> trained in-browser on spatial features
+        derived from your vector GeoJSON layers.<br><br>
+        <strong>No wind/power raster data used</strong> — classifier uses only the
+        vector query outputs (Q1–Q7) that work correctly.
+      </div>
+
+      <!-- Features used -->
+      <div class="ml-features">
+        <div class="ml-feat-row">
+          <div class="feat-dot" style="background:#ef4444"></div>
+          <span class="feat-name">dist_urban</span>
+          <span>dist to buildings/schools/hospitals</span>
+        </div>
+        <div class="ml-feat-row">
+          <div class="feat-dot" style="background:#3b82f6"></div>
+          <span class="feat-name">dist_water</span>
+          <span>dist to waterways &amp; waterbodies</span>
+        </div>
+        <div class="ml-feat-row">
+          <div class="feat-dot" style="background:#22c55e"></div>
+          <span class="feat-name">dist_wildlife</span>
+          <span>dist to wildlife &amp; land use zones</span>
+        </div>
+        <div class="ml-feat-row">
+          <div class="feat-dot" style="background:#fbbf24"></div>
+          <span class="feat-name">dist_power</span>
+          <span>dist to power lines &amp; stations</span>
+        </div>
+        <div class="ml-feat-row">
+          <div class="feat-dot" style="background:#a855f7"></div>
+          <span class="feat-name">lat_norm</span>
+          <span>normalized latitude position</span>
+        </div>
+        <div class="ml-feat-row">
+          <div class="feat-dot" style="background:#f472b6"></div>
+          <span class="feat-name">lng_norm</span>
+          <span>normalized longitude position</span>
+        </div>
+      </div>
+
+      <!-- Network architecture -->
+      <div class="ml-arch">
+        <div style="color:#475569;margin-bottom:6px;font-size:8px;text-transform:uppercase;letter-spacing:0.5px">Network Architecture</div>
+        <div class="ml-arch-row">
+          <div class="ml-layer-box input">Input<br>6 nodes</div>
+          <div class="ml-arrow">→</div>
+          <div class="ml-layer-box hidden">Dense 16<br>ReLU</div>
+          <div class="ml-arrow">→</div>
+          <div class="ml-layer-box hidden" style="border-color:#c084fc;color:#c084fc">Dense 8<br>ReLU</div>
+          <div class="ml-arrow">→</div>
+          <div class="ml-layer-box output">Softmax<br>3 classes</div>
+        </div>
+        <div style="margin-top:6px;color:#334155">
+          Loss: CategoricalCrossentropy &nbsp;|&nbsp; Optimizer: Adam(lr=0.01)
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="ml-progress-wrap">
+        <div id="ml-progress-bar"></div>
+      </div>
+
+      <!-- Status message -->
+      <div class="ml-status ml-status-info" id="ml-status">
+        Click <strong>Train Model</strong> to begin. Trains on 500 spatial points in ~5 seconds.
+      </div>
+
+      <!-- Buttons -->
+      <div class="ml-btn-row">
+        <button class="ml-btn" id="ml-train-btn" onclick="mlTrain()">
+          🧠 Train Model (500pts × 40 epochs)
+        </button>
+        <button class="ml-btn" id="ml-predict-btn" onclick="mlPredict()" disabled>
+          🗺️ Predict Grid on Map (22×22)
+        </button>
+        <button class="ml-btn" id="ml-click-btn" onclick="mlToggleClickMode()" disabled>
+          👆 Click-to-Predict Mode
+        </button>
+        <button class="ml-btn" id="ml-clear-btn" onclick="mlClearPredictions()">
+          🗑️ Clear Prediction Layer
+        </button>
+      </div>
+
+      <!-- Training chart -->
+      <div class="ml-chart-wrap">
+        <div class="ml-chart-label">Training History — Loss &amp; Accuracy</div>
+        <canvas id="ml-train-chart" width="220" height="90"></canvas>
+      </div>
+
+      <!-- Output class legend -->
+      <div class="ml-class-legend">
+        <div class="ml-class-row">
+          <div class="ml-class-dot" style="background:#ef4444"></div>
+          <span><strong style="color:#f87171">Low</strong> — exclusion zones overlap, avoid</span>
+        </div>
+        <div class="ml-class-row">
+          <div class="ml-class-dot" style="background:#f59e0b"></div>
+          <span><strong style="color:#fcd34d">Medium</strong> — partial suitability</span>
+        </div>
+        <div class="ml-class-row">
+          <div class="ml-class-dot" style="background:#22c55e"></div>
+          <span><strong style="color:#86efac">High</strong> — passes all vector criteria</span>
+        </div>
+      </div>
+
+      <!-- How it works -->
+      <div class="ml-how">
+        <div class="ml-how-title">How It Works</div>
+        <div class="ml-how-step">
+          <div class="step-n">1</div>
+          <span>500 random points generated across Tirupati bounds</span>
+        </div>
+        <div class="ml-how-step">
+          <div class="step-n">2</div>
+          <span>Each point: 6 features computed from GeoJSON distances</span>
+        </div>
+        <div class="ml-how-step">
+          <div class="step-n">3</div>
+          <span>Labels: High if inside Q1∩Q2∩(Q5 or Q7), Medium if ≥2, else Low</span>
+        </div>
+        <div class="ml-how-step">
+          <div class="step-n">4</div>
+          <span>Neural net trained in-browser (TensorFlow.js, no server needed)</span>
+        </div>
+        <div class="ml-how-step">
+          <div class="step-n">5</div>
+          <span>Predict Grid: 22×22 spatial cells coloured by predicted class</span>
+        </div>
+        <div class="ml-how-step">
+          <div class="step-n">6</div>
+          <span>Click any map point in Click Mode to get instant ML prediction</span>
+        </div>
+      </div>
+
+      <!-- Math section -->
+      <div class="ml-math">
+        <div class="ml-math-title">Mathematical Basis</div>
+        <div class="ml-math-line">
+          <span class="eq-name">Haversine:</span>
+          <span class="eq-val">d = 2R·atan2(√a, √(1−a))</span>
+        </div>
+        <div class="ml-math-line">
+          <span class="eq-name">Normalize:</span>
+          <span class="eq-val">f = min(dist, 20km) / 20</span>
+        </div>
+        <div class="ml-math-line">
+          <span class="eq-name">f1 urban:</span>
+          <span class="eq-val">(d_bldg + d_school + d_hosp) / 3</span>
+        </div>
+        <div class="ml-math-line">
+          <span class="eq-name">f2 water:</span>
+          <span class="eq-val">(d_way + d_body) / 2</span>
+        </div>
+        <div class="ml-math-line">
+          <span class="eq-name">f3 wildlife:</span>
+          <span class="eq-val">(d_wild + d_land) / 2</span>
+        </div>
+        <div class="ml-math-line">
+          <span class="eq-name">f4 power:</span>
+          <span class="eq-val">min(d_lines, d_stations)</span>
+        </div>
+        <div class="ml-math-line">
+          <span class="eq-name">Softmax:</span>
+          <span class="eq-val">P(c) = e^zc / Σe^zk</span>
+        </div>
+        <div class="ml-math-line">
+          <span class="eq-name">Loss:</span>
+          <span class="eq-val">−Σ y·log(ŷ) (cross-entropy)</span>
+        </div>
+      </div>
+
+    </div><!-- end .ml-section -->
+
+  </aside>
+</div>
+
+<!-- ─── POPUP MODAL ─── -->
+<div id="info-modal" class="modal hidden">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- TensorFlow.js — load BEFORE app.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.18.0/dist/tf.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+
+<script>
+  // After predictions are drawn, show the ML map legend
+  const _origPredict = mlPredict;
+  // Patch mlPredict to also show map legend
+  window.mlPredict = function() {
+    _origPredict();
+    setTimeout(() => {
+      const el = document.getElementById('ml-map-legend');
+      if (el) el.style.display = 'block';
+    }, 500);
+  };
+</script>
+
+</body>
+</html>
